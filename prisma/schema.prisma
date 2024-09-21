@@ -28,10 +28,14 @@ model Customer {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  name  String  @db.VarChar(20)
-  role  Role    @default(USER)
-  Order Order[]
+  id            Int     @id @default(autoincrement())
+  name          String  @db.VarChar(20)
+  role          Role    @default(USER)
+  email         String  @unique @db.VarChar(255)
+  password      String  @db.VarChar(255)
+  oauthProvider String? @map("oauth_provider") @db.VarChar(50)
+  oauthId       String? @unique @map("oauth_id") @db.VarChar(255)
+  Order         Order[]
 
   @@map("user")
 }
