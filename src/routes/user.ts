@@ -1,5 +1,4 @@
 import { Hono } from 'hono'
-import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
 
@@ -14,40 +13,33 @@ user
     const bodySchema = z.object({
       name: z.string(),
       role: z.enum(['USER', 'ADMIN']),
+      email: z.string().email(),
+      password: z.string(),
+      oauthProvider: z.string().optional(),
+      oauthId: z.string().optional(),
     })
 
     const body = await c.req.json()
-    const { name, role } = bodySchema.parse(body)
 
     const user = await prisma.user.create({
-      data: {
-        name,
-        role,
-      },
+      data: bodySchema.parse(body),
     })
 
-    return c.json(user)
+    return c.json(user, 201)
   })
 
   .delete('/:id', async (c) => {
     const paramsSchema = z.object({
-      id: z.string().transform((v) => Number.parseInt(v)),
+      id: z.coerce.number(),
     })
 
     const { id } = paramsSchema.parse(c.req.param())
-    console.log({ id })
-
-    const user = await prisma.user.findUnique({
-      where: { id },
-    })
-
-    if (!user) throw new HTTPException(404, { message: 'User not found' })
 
     await prisma.user.delete({
       where: { id },
     })
 
-    return c.text('User deleted', 200)
+    return c.text('User deleted', 204)
   })
 
 export default user
