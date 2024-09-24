@@ -9,24 +9,38 @@ order
     return c.json(orders)
   })
 
-  .post('/', async (c) => {
-    const bodySchema = z.object({
-      date: z.string().date(),
-      maxTimeDelivery: z.string().time().optional(),
-      minTimeDelivery: z.string().time().optional(),
-      orderStatus: z.enum(['PENDING', 'DELIVERED', 'CANCELED']),
-      customerId: z.number(),
-      userId: z.number(),
-    })
-
-    const body = await c.req.json()
-
-    const order = await prisma.order.create({
-      data: bodySchema.parse(body),
-    })
-
-    return c.json(order, 201)
-  })
+  .post(
+    '/',
+    zValidator(
+      'json',
+      z.object({
+        date: z.coerce.date(),
+        maxTimeDelivery: z
+          .string()
+          .refine(validateTime, { message: 'Invalid time format' })
+          .transform(convertTime)
+          .optional(),
+        minTimeDelivery: z
+          .string()
+          .refine(validateTime, { message: 'Invalid time format' })
+          .transform(convertTime)
+          .optional(),
+        orderStatus: z.enum(['PENDING', 'DELIVERED', 'CANCELED']),
+        customerId: z.number(),
+        userId: z.number(),
+      }),
+      (result, c) => {
+        if (!result.success) {
+          return c.json(result, 400)
+        }
+      },
+    ),
+    async (c) => {
+      const data = c.req.valid('json')
+      const order = await prisma.order.create({ data })
+      return c.json(order, 201)
+    },
+  )
 
   .put('/:id', async (c) => {
     const paramsSchema = z.object({
