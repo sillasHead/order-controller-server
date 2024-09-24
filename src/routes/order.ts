@@ -1,11 +1,22 @@
+import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
+import { convertTime, validateTime } from '../utils/validation-utils'
 
 const order = new Hono()
 order
   .get('/', async (c) => {
-    const orders = await prisma.order.findMany()
+    const orders = await prisma.order.findMany({
+      include: {
+        customer: true,
+        orderProduct: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    })
     return c.json(orders)
   })
 
